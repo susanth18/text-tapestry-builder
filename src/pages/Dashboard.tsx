@@ -1,50 +1,86 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit, Plus, BarChart3, Clock, Users, TrendingUp, FileText, Settings } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Edit, Plus, BarChart3, Clock, TrendingUp, FileText, Settings, LogOut } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+interface Article {
+  id: string;
+  title: string;
+  status: string;
+  created_at: string;
+  content: string;
+}
 
 const Dashboard = () => {
-  const [user] = useState({
-    name: "John Doe",
-    email: "john@example.com",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
-  });
+  const { user, signOut } = useAuth();
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    
+    fetchArticles();
+  }, [user, navigate]);
+
+  const fetchArticles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (error) throw error;
+      setArticles(data || []);
+    } catch (error) {
+      console.error('Error fetching articles:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load articles.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const stats = [
-    { title: "Articles Created", value: "24", icon: <FileText className="h-5 w-5" />, change: "+12%" },
+    { title: "Articles Created", value: articles.length.toString(), icon: <FileText className="h-5 w-5" />, change: "+12%" },
     { title: "Total Views", value: "15.2K", icon: <BarChart3 className="h-5 w-5" />, change: "+8%" },
     { title: "Avg. Read Time", value: "3.2 min", icon: <Clock className="h-5 w-5" />, change: "+5%" },
     { title: "Engagement Rate", value: "68%", icon: <TrendingUp className="h-5 w-5" />, change: "+15%" },
   ];
 
-  const recentArticles = [
-    {
-      id: 1,
-      title: "10 Tips for Better Content Marketing",
-      status: "Published",
-      views: "1.2K",
-      date: "2 days ago",
-      thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=300&h=200&fit=crop"
-    },
-    {
-      id: 2,
-      title: "The Future of AI in Digital Marketing",
-      status: "Draft",
-      views: "-",
-      date: "5 days ago",
-      thumbnail: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&h=200&fit=crop"
-    },
-    {
-      id: 3,
-      title: "SEO Best Practices for 2024",
-      status: "Published",
-      views: "856",
-      date: "1 week ago",
-      thumbnail: "https://images.unsplash.com/photo-1432888622747-4eb9a8efeb07?w=300&h=200&fit=crop"
-    },
-  ];
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -64,8 +100,10 @@ const Dashboard = () => {
                 New Article
               </Link>
               <div className="flex items-center space-x-2">
-                <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
-                <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                <span className="text-sm font-medium text-gray-700">{user?.email}</span>
+                <Button variant="outline" size="sm" onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           </div>
@@ -75,7 +113,7 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, {user.name}!</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back!</h1>
           <p className="text-gray-600">Here's what's happening with your content today.</p>
         </div>
 
@@ -109,38 +147,48 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentArticles.map((article) => (
-                    <div key={article.id} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                      <img 
-                        src={article.thumbnail} 
-                        alt={article.title}
-                        className="w-16 h-12 rounded object-cover"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-gray-900 truncate">{article.title}</h3>
-                        <div className="flex items-center space-x-4 mt-1">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            article.status === 'Published' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {article.status}
-                          </span>
-                          <span className="text-sm text-gray-500">{article.views} views</span>
-                          <span className="text-sm text-gray-500">{article.date}</span>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                  {articles.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500 mb-4">No articles yet. Create your first one!</p>
+                      <Link to="/generate">
+                        <Button className="btn-primary">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create New Article
+                        </Button>
+                      </Link>
                     </div>
-                  ))}
+                  ) : (
+                    articles.map((article) => (
+                      <div key={article.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-medium text-gray-900 truncate">{article.title}</h3>
+                          <div className="flex items-center space-x-4 mt-1">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              article.status === 'published' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {article.status}
+                            </span>
+                            <span className="text-sm text-gray-500">
+                              {new Date(article.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))
+                  )}
                 </div>
-                <div className="mt-6">
-                  <Button variant="outline" className="w-full">
-                    View All Articles
-                  </Button>
-                </div>
+                {articles.length > 0 && (
+                  <div className="mt-6">
+                    <Button variant="outline" className="w-full">
+                      View All Articles
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

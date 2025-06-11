@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Edit, ArrowLeft, Eye, EyeOff, CheckCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -18,6 +20,9 @@ const Signup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { signUp } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   const passwordRequirements = [
     { text: 'At least 8 characters', met: formData.password.length >= 8 },
@@ -32,16 +37,51 @@ const Signup = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!agreeToTerms) return;
+    if (!agreeToTerms) {
+      toast({
+        title: "Terms Required",
+        description: "Please agree to the Terms of Service and Privacy Policy.",
+        variant: "destructive",
+      });
+      return;
+    }
     
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Password Mismatch",
+        description: "Passwords do not match. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const { error } = await signUp(formData.email, formData.password, formData.fullName);
+      
+      if (error) {
+        toast({
+          title: "Signup Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Account Created!",
+          description: "Please check your email to verify your account.",
+        });
+        navigate('/login');
+      }
+    } catch (error) {
+      toast({
+        title: "Signup Failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-      console.log('Signup attempt:', formData);
-      // Redirect to dashboard would happen here
-    }, 2000);
+    }
   };
 
   const isPasswordValid = passwordRequirements.every(req => req.met);
