@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit, Plus, BarChart3, Clock, TrendingUp, FileText, Settings, LogOut } from "lucide-react";
+import { Edit, Plus, BarChart3, Clock, TrendingUp, FileText, Settings, LogOut, ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -88,11 +88,17 @@ const Dashboard = () => {
       <nav className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-brand-blue-600 to-brand-purple-600 rounded-lg flex items-center justify-center">
-                <Edit className="h-5 w-5 text-white" />
+            <div className="flex items-center space-x-4">
+              <Link to="/" className="inline-flex items-center text-gray-600 hover:text-gray-900 group">
+                <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+                Back to Home
+              </Link>
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-brand-blue-600 to-brand-purple-600 rounded-lg flex items-center justify-center">
+                  <Edit className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-xl font-bold text-gray-900">ArticleGen</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">ArticleGen</span>
             </div>
             <div className="flex items-center space-x-4">
               <Link to="/generate" className="btn-primary">
@@ -117,7 +123,6 @@ const Dashboard = () => {
           <p className="text-gray-600">Here's what's happening with your content today.</p>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (
             <Card key={index} className="card-hover">
@@ -138,7 +143,6 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Recent Articles */}
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
@@ -193,9 +197,7 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          {/* Quick Actions & Tips */}
           <div className="space-y-6">
-            {/* Quick Actions */}
             <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
@@ -218,7 +220,6 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Writing Tips */}
             <Card>
               <CardHeader>
                 <CardTitle>Writing Tip</CardTitle>
